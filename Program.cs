@@ -8,6 +8,7 @@ using NAudio.MediaFoundation;
 using System.Globalization;
 using System.Security.Cryptography.X509Certificates;
 using System.Net.NetworkInformation;
+using System.Threading.Tasks;
 
 
 namespace Terminal 
@@ -19,7 +20,7 @@ namespace Terminal
             {"generate:", " generates the .bin file for all available phoneme"},
             {"help:", " displays this menu"}
         };
-        static void Main(string[] args) 
+        static async Task Main(string[] args) 
         {
 
             if (args.Length == 0)
@@ -28,10 +29,12 @@ namespace Terminal
             }
             else
             {
-                switch(args[0])
+                switch(args[1])
                 {
                     case "generate": 
-                    Phonemes.Vowels.Generator.GenerateFiles(Phonemes.Vowels.Generator.samples, Phonemes.Frequencies.Vowels);
+                    string[] comandos = new string[args.Length - 1];
+                    Array.Copy(args, comandos, 1);
+                    await Phonemes.GenerationManager.GenerateFiles(comandos);
                     break;
 
                     case "help":
