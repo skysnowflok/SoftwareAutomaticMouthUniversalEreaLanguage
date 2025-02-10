@@ -20,7 +20,7 @@ namespace Terminal
             {"generate:", " generates the .bin file for all available phoneme"},
             {"help:", " displays this menu"}
         };
-        static async Task Main(string[] args) 
+        static void Main(string[] args) 
         {
 
             if (args.Length == 0)
@@ -34,7 +34,7 @@ namespace Terminal
                     case "generate": 
                     string[] comandos = new string[args.Length - 1];
                     Array.Copy(args, comandos, 1);
-                    await Phonemes.GenerationManager.GenerateFiles(comandos);
+                    Phonemes.GenerationManager.GenerateFiles(comandos);
                     break;
 
                     case "help":

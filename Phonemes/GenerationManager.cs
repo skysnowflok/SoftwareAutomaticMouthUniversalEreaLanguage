@@ -137,22 +137,22 @@ namespace Phonemes
             {0, 20000, 0}
         };
 
-        public static async Task GenerateFiles(params string[] comandos)
+        public static void GenerateFiles(params string[] comandos)
         {
 
             foreach (string comando in comandos)
             {
                 if (dicionario.TryGetValue(comando, out int[,] selecionado)) 
                 {
-                    Console.WriteLine($"Generating files for {folderpath}");
-                    GenerateFile(samples, selecionado, folderpath);
+                    Console.WriteLine($"Generating files for {folderpath} \n");
+                    GenerateFile(samples, selecionado, folderpath); //github copilot
 
                 }
                 else
                 {
                     Console.WriteLine($"Error, bad argument: {comando}");
-                    break;
                 }
+                break;
             }
         }
 
@@ -162,7 +162,7 @@ namespace Phonemes
 
         public static void GenerateFile(int samples, int[,] formantsFrequency, string folder)
         {
-            float[,] sineWavesBuffer = new float[formantsFrequency.GetLength(0), samples];
+            float[] sineWavesBuffer = new float[samples];
             sineWaves = new float[samples]; // Ensure sineWaves is properly initialized
 
             for (int i = 0; i < samples; i++)
@@ -170,32 +170,48 @@ namespace Phonemes
                 float x = (float)i / samples;
                 BaseSineWave[i] = (float)Math.Sin(2 * pi * baseFrequency * x);
             }
+            Console.WriteLine($"BaseSineWave generated with {samples} samples \n");
 
-            for (int j = 0; j < samples; j++)
+            for (int i = 1; i < formantsFrequency.GetLength(0); i++)
             {
-                Parallel.For(0, formantsFrequency.GetLength(0), i =>
+                for (int j = 0; j < formantsFrequency.GetLength(1); j++)
                 {
-                    float x = (float)j / samples;
-                    sineWavesBuffer[i, j] = (float)Math.Sin(2 * pi * formantsFrequency[i, 0] * x);
-                    sineWaves[j] += sineWavesBuffer[i, j] + BaseSineWave[j];
-                });
-
-
-            }
-            audioData = ConvertFloatToInt16(sineWaves);
-            for (int j = 0; j < formantsFrequency.GetLength(0); j++)
-            {
-                using (var writer = new BinaryWriter(File.Open(Path.Combine(folder, $"phoneme{j}.bin"), FileMode.Create)))
-                {
-                    writer.Write(audioData.Length); // Salva o tamanho do array
-                    foreach (byte valor in audioData)
+                    for (int k = 0; k < samples; k++)
                     {
-                        writer.Write(valor); // Salva cada valor
+                        float x = (float)k / samples;
+                        sineWavesBuffer[k] = (float)Math.Sin(2 * pi * formantsFrequency[i, j] * x);
+                        sineWaves[k] += sineWavesBuffer[k] + BaseSineWave[k];
+                        Console.WriteLine($"Processing: i={i}, j={j}, k={k} \n");
+                    }
+
+                    audioData = ConvertFloatToInt16(sineWaves);
+                    if (audioData == null)
+                    {
+                        Console.WriteLine("Error, audioData is null \n");
+                        return;
+                    }
+
+                    string filePath = Path.Combine(folder, $"{i}_{j}.bin");
+                    try
+                    {
+                        using (var writer = new BinaryWriter(File.Open(filePath, FileMode.Create)))
+                        {
+                            writer.Write(audioData.Length); // Salva o tamanho do array
+                            foreach (byte valor in audioData)
+                            {
+                                writer.Write(valor); // Salva cada valor
+                            }
+                        }
+                        Console.WriteLine($"File saved: {filePath} \n");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Failed to write file {filePath}: {ex.Message} \n");
                     }
                 }
             }
+
             Console.WriteLine($"Generated {samples} samples for folder: {folder}");
-            Console.WriteLine($"sineWaves length: {sineWaves.Length}");
         }
 
         static byte[] ConvertFloatToInt16(float[] samples)
