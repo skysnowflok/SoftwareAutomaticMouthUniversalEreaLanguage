@@ -4,220 +4,124 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-
-
-
+using System.IO;
+using SoftwareAutomaticMouthUniversalEreaLanguage.Phonemes;
+using System.Threading;
 
 namespace Phonemes
 {
     public class GenerationManager
     {
-        public static int sampleRate {get; set;} = 44100;
-        public static double duration {get; set;} = 1.0; // segundos
-        public static int samples {get; set;} = (int)(sampleRate*duration);
-        private static string folderpath = Path.Combine(Directory.GetCurrentDirectory(), "Phonemes", "vowels");
-
-        public static int[] Frequencies = new int[3];
-        private static double pi = Math.PI;
-        private static double baseFrequency = 100;
-        private static float[] sineWaves = new float[samples];
-        private static float[] BaseSineWave = new float[samples];
-        private static byte[] audioData = new byte[samples];
-
-            public static Dictionary<string, int[,]> dicionario = new Dictionary<string, int[,]>
+        private static readonly object fileLock = new object();
+        public static string folderpath = Path.Combine(Directory.GetCurrentDirectory(), "Phonemes", "vowels");
+        public static List<Thread> ThreadList = new List<Thread>();
+        public static (int[,], string keyFinal) GetPhonemeFrequencies(string key)
         {
-            {"vowels", Vowels ?? new int[0, 0]},
-            {"nasals", Nasals ?? new int[0, 0]},
-            {"approximants", Approximants ?? new int[0, 0]},
-            {"fricatives", Fricatives ?? new int[0, 0]},
-            {"affricates", Affricates ?? new int[0, 0]}
-
-        };
-
-
-
-
-
-
-        
-
-
-        public static readonly int[,] Vowels = 
-        {
-            {240, 2400, 2160}, // i vogal i
-            {235, 2100, 1865}, // y 
-            {390, 2300, 1910}, // e 
-            {370, 1900, 1530}, // ø 
-            {610, 1900, 1290}, // ɛ vogal e
-            {585, 1710, 1125}, // œ
-            {850, 1610, 760}, // a vogal a
-            {820, 1530, 710}, // ɶ
-            {750, 940, 190}, // ɑ 
-            {700, 760, 60}, // ɒ
-            {600, 1170, 570}, // ʌ
-            {500, 700, 200}, // ɔ vogal o
-            {460, 1310, 850}, // ɤ
-            {360, 640, 280}, // o
-            {300, 1390, 1090}, // ɯ
-            {250, 595, 345} // u vogal u
-        };
-
-        public static readonly int[,] Nasals =
-        {
-            /*
-            Nasals (/m/, /n/, /ŋ/)
-
-            Nasals have a low first formant (F1) (~250-300 Hz) due to the closed oral cavity.
-            /m/: F1 ≈ 250-300 Hz, F2 ≈ 1000 Hz, F3 ≈ 2000 Hz
-            /n/: F1 ≈ 250-300 Hz, F2 ≈ 1500-2000 Hz, F3 ≈ 2500 Hz
-            /ŋ/: F1 ≈ 250-300 Hz, F2 ≈ 1500-2000 Hz (varies), F3 ≈ 2500 Hz
-            */
-
-            {250, 100, 2000},
-            {250, 1500, 2500},
-            {250, 1500, 2500}
-        };
-        public static readonly int[,] Approximants =
-        {
-            /*
-            Approximants (/w/, /j/, /r/, /l/)
-
-            /w/ (similar to /u/): F1 ≈ 300-400 Hz, F2 ≈ 600-800 Hz, F3 ≈ 2500 Hz
-            /j/ (similar to /i/): F1 ≈ 250-300 Hz, F2 ≈ 2000-2500 Hz, F3 ≈ 3000 Hz
-            /r/: F1 ≈ 300-400 Hz, F2 ≈ 1000-1600 Hz, F3 ≈ low (~1500 Hz or lower)
-            /l/: F1 ≈ 300-400 Hz, F2 ≈ 1000-1500 Hz, F3 ≈ 2500 Hz
-            */
-            {300, 600, 2500},
-            {250, 2000, 3000},
-            {300, 1000, 1500},
-            {300, 1000, 2500}
-        };
-
-        public static readonly int[,] Stops =
-        {
-            /*
-            Stops (/p/, /b/, /t/, /d/, /k/, /ɡ/)
-
-            Stops are better characterized by formant transitions rather than steady-state frequencies.
-            Bilabials (/p/, /b/): F2 transition starts low (~600-800 Hz)
-            Alveolars (/t/, /d/): F2 transition around 1600-1800 Hz
-            Velars (/k/, /ɡ/): F2 transition varies (~1200-2500 Hz), F3 often converges with F2 (velar pinch)
-            */
-            {0, 600, 0},
-            {0, 1600, 0},
-            {0, 1200, 0}
-        };
-
-        public static readonly int[,] Fricatives =
-        {
-            /*
-            Fricatives (/f/, /v/, /θ/, /ð/, /s/, /z/, /ʃ/, /ʒ/, /h/)
-
-            Fricatives are characterized by broad spectral noise rather than formant structure.
-            /s/ and /z/: Strong energy around 4000-8000 Hz
-            /ʃ/ and /ʒ/: Strong energy around 2000-5000 Hz
-            /f/ and /v/: Broad energy, weak formants (~1000-4000 Hz)
-            /h/: Can adopt the formant structure of adjacent vowels
-            */
-            {0, 4000, 0},
-            {0, 20000, 0},
-            {0, 10000, 0},
-            {0, 0, 0}
-        };
-
-        public static readonly int[,] Affricates =
-        {
-            /*
-            Affricates (/ʧ/, /ʤ/)
-
-            /ʧ/ (as in "chop"): Similar to /ʃ/ (~2000-5000 Hz) with a stop closure
-            /ʤ/ (as in "judge"): Similar to /ʒ/ (~2000-5000 Hz) with a stop closure
-            */
-            {0, 2000, 0},
-            {0, 20000, 0}
-        };
-
-        public static void GenerateFiles(params string[] comandos)
-        {
-
-            foreach (string comando in comandos)
+            if (Frequencies.dicionario.TryGetValue(key, out int[,] frequencies) && frequencies != null)
             {
-                if (dicionario.TryGetValue(comando, out int[,] selecionado)) 
-                {
-                    Console.WriteLine($"Generating files for {folderpath} \n");
-                    GenerateFile(samples, selecionado, folderpath); //github copilot
-
-                }
-                else
-                {
-                    Console.WriteLine($"Error, bad argument: {comando}");
-                }
-                break;
+                return (frequencies, key);
+            }
+            else
+            {
+                Console.WriteLine("erro: " + frequencies);
+                throw new ArgumentException($"Invalid key: {key}");
             }
         }
 
-        
-
-
-
-        public static void GenerateFile(int samples, int[,] formantsFrequency, string folder)
+        public static void GenerateFiles(string[] comandos)
         {
-            float[] sineWavesBuffer = new float[samples];
-            sineWaves = new float[samples]; // Ensure sineWaves is properly initialized
+            ThreadList.Clear();
+            int[,] selecionado;
+            string key;
+            foreach (string comando in comandos)
+            {
+                Console.WriteLine($"Generating files for {comando} \n");
+                (selecionado, key) = GetPhonemeFrequencies(comando);
+                Console.WriteLine($"Generating files for {key} \n");
 
+                for (int i = 0; i < selecionado.GetLength(0); i++)
+                {
+                    System.Console.WriteLine(i);
+                    ThreadList.Add(new Thread(() =>
+                    {
+                        Thread.CurrentThread.Name = i.ToString();
+                        System.Console.WriteLine(Thread.CurrentThread.Name);
+                        var result = GenerateFormants(Frequencies.samples, selecionado, folderpath);
+                        lock (result)
+                        {
+                        GenerateFile(result, i);
+                        }
+                    }));
+                }
+            }
+            foreach (Thread thread in ThreadList)
+            {
+                thread.Start();
+            }
+            
+        }
+
+        public static List<byte> GenerateFormants(int samples, int[,] formantsFrequency, string folder)
+        {
+            float[] sineWaves = new float[samples]; // Ensure sineWaves is properly initialized
+            List<Thread> FormantsThreadsList = new List<Thread>();
+            List<float> allSineWaves = new List<float>();
+            List<byte> audioData = new List<byte>();
+
+            for (int i = 0; i < formantsFrequency.GetLength(1); i++)
+            {
+                FormantsThreadsList.Add(new Thread(() =>
+                {
+                Thread.CurrentThread.Name = i.ToString();
+                Console.WriteLine(Thread.CurrentThread.Name); 
+                var result = GenerateFormant(samples, Thread.CurrentThread.Name ?? "0", formantsFrequency);
+                lock (allSineWaves)
+                {
+                    allSineWaves.AddRange(result);
+                    audioData[i] = ConvertFloatToInt16(allSineWaves.ToArray())[i];
+                }
+                }));
+            };
+            foreach (Thread thread in FormantsThreadsList)
+            {
+                thread.Start();
+            }
+            return audioData;
+        }
+
+        static List<float> GenerateFormant(int samples, string ThreadName, int[,] formantsfrequency) 
+        {
+            float[] sineWave = new float[samples];
+            int ThreadNumber = int.Parse(ThreadName);
+            List<float> SineWaves = new List<float>();
+
+            if (!int.TryParse(Thread.CurrentThread.Name, out int ThreadColumn))
+            {
+                ThreadColumn = 0; // Evita erro se o nome for inválido
+            }
+
+            int maxRows = formantsfrequency.GetLength(0);
+            int maxColumns = formantsfrequency.GetLength(1);
+
+            if (ThreadNumber < 0 || ThreadNumber >= maxRows ||
+                ThreadColumn < 0 || ThreadColumn >= maxColumns)
+            {
+                Console.WriteLine($"Erro: Índices fora dos limites! ThreadNumber={ThreadNumber}, ThreadColumn={ThreadColumn}");
+                return new List<float>(); // Evita erro retornando lista vazia
+            }
             for (int i = 0; i < samples; i++)
             {
                 float x = (float)i / samples;
-                BaseSineWave[i] = (float)Math.Sin(2 * pi * baseFrequency * x);
+                sineWave[i] = (float)Math.Sin(2 * Frequencies.pi * formantsfrequency[ThreadNumber, ThreadColumn] * x);
+                SineWaves.Add(sineWave[i]);
             }
-            Console.WriteLine($"BaseSineWave generated with {samples} samples \n");
+            return SineWaves;
 
-            for (int i = 1; i < formantsFrequency.GetLength(0); i++)
-            {
-                for (int j = 0; j < formantsFrequency.GetLength(1); j++)
-                {
-                    for (int k = 0; k < samples; k++)
-                    {
-                        float x = (float)k / samples;
-                        sineWavesBuffer[k] = (float)Math.Sin(2 * pi * formantsFrequency[i, j] * x);
-                        sineWaves[k] += sineWavesBuffer[k] + BaseSineWave[k];
-                        Console.WriteLine($"Processing: i={i}, j={j}, k={k} \n");
-                    }
-
-                    audioData = ConvertFloatToInt16(sineWaves);
-                    if (audioData == null)
-                    {
-                        Console.WriteLine("Error, audioData is null \n");
-                        return;
-                    }
-
-                    string filePath = Path.Combine(folder, $"{i}_{j}.bin");
-                    try
-                    {
-                        using (var writer = new BinaryWriter(File.Open(filePath, FileMode.Create)))
-                        {
-                            writer.Write(audioData.Length); // Salva o tamanho do array
-                            foreach (byte valor in audioData)
-                            {
-                                writer.Write(valor); // Salva cada valor
-                            }
-                        }
-                        Console.WriteLine($"File saved: {filePath} \n");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Failed to write file {filePath}: {ex.Message} \n");
-                    }
-                }
-            }
-
-            Console.WriteLine($"Generated {samples} samples for folder: {folder}");
         }
-
         static byte[] ConvertFloatToInt16(float[] samples)
         {
             var bytesArray = new byte[samples.Length * 2];
-            for (int i = 0; i < samples.Length; i++)
+            Parallel.For(0, samples.Length, i =>
             {
                 var sample = samples[i];
                 // Limitar entre -1 e 1
@@ -229,51 +133,17 @@ namespace Phonemes
                 // Converter para bytes
                 bytesArray[i * 2] = (byte)(shortSample & 0xFF);
                 bytesArray[i * 2 + 1] = (byte)(shortSample >> 8);
-            }
+            });
             return bytesArray;
         }
 
-
-
-
-
-
+        static void GenerateFile(List<byte> audioData, int i)
+        {
+            lock(fileLock)
+            {
+                string path = Path.Combine(Directory.GetCurrentDirectory(), "Phonemes", "vowels", $"phoneme{i}.bin");
+                File.WriteAllBytes(path, audioData.ToArray());
+            }
+        }
     }
 }
-
-/*
-    Approximate Formant Frequencies of Consonants (in Hz)
-Nasals (/m/, /n/, /ŋ/)
-
-    Nasals have a low first formant (F1) (~250-300 Hz) due to the closed oral cavity.
-    /m/: F1 ≈ 250-300 Hz, F2 ≈ 1000 Hz, F3 ≈ 2000 Hz
-    /n/: F1 ≈ 250-300 Hz, F2 ≈ 1500-2000 Hz, F3 ≈ 2500 Hz
-    /ŋ/: F1 ≈ 250-300 Hz, F2 ≈ 1500-2000 Hz (varies), F3 ≈ 2500 Hz
-
-Approximants (/w/, /j/, /r/, /l/)
-
-    /w/ (similar to /u/): F1 ≈ 300-400 Hz, F2 ≈ 600-800 Hz, F3 ≈ 2500 Hz
-    /j/ (similar to /i/): F1 ≈ 250-300 Hz, F2 ≈ 2000-2500 Hz, F3 ≈ 3000 Hz
-    /r/: F1 ≈ 300-400 Hz, F2 ≈ 1000-1600 Hz, F3 ≈ low (~1500 Hz or lower)
-    /l/: F1 ≈ 300-400 Hz, F2 ≈ 1000-1500 Hz, F3 ≈ 2500 Hz
-
-Stops (/p/, /b/, /t/, /d/, /k/, /ɡ/)
-
-    Stops are better characterized by formant transitions rather than steady-state frequencies.
-    Bilabials (/p/, /b/): F2 transition starts low (~600-800 Hz)
-    Alveolars (/t/, /d/): F2 transition around 1600-1800 Hz
-    Velars (/k/, /ɡ/): F2 transition varies (~1200-2500 Hz), F3 often converges with F2 (velar pinch)
-
-Fricatives (/f/, /v/, /θ/, /ð/, /s/, /z/, /ʃ/, /ʒ/, /h/)
-
-    Fricatives are characterized by broad spectral noise rather than formant structure.
-    /s/ and /z/: Strong energy around 4000-8000 Hz
-    /ʃ/ and /ʒ/: Strong energy around 2000-5000 Hz
-    /f/ and /v/: Broad energy, weak formants (~1000-4000 Hz)
-    /h/: Can adopt the formant structure of adjacent vowels
-
-Affricates (/ʧ/, /ʤ/)
-
-    /ʧ/ (as in "chop"): Similar to /ʃ/ (~2000-5000 Hz) with a stop closure
-    /ʤ/ (as in "judge"): Similar to /ʒ/ (~2000-5000 Hz) with a stop closure
-*/

@@ -9,6 +9,8 @@ using System.Globalization;
 using System.Security.Cryptography.X509Certificates;
 using System.Net.NetworkInformation;
 using System.Threading.Tasks;
+using NAudio.CoreAudioApi;
+using SoftwareAutomaticMouthUniversalEreaLanguage.Phonemes;
 
 
 namespace Terminal 
@@ -29,12 +31,10 @@ namespace Terminal
             }
             else
             {
-                switch(args[1])
+                switch(args[0])
                 {
-                    case "generate": 
-                    string[] comandos = new string[args.Length - 1];
-                    Array.Copy(args, comandos, 1);
-                    Phonemes.GenerationManager.GenerateFiles(comandos);
+                    case "vowels": 
+                    Phonemes.GenerationManager.GenerateFiles(args);
                     break;
 
                     case "help":
@@ -44,11 +44,27 @@ namespace Terminal
                         Console.WriteLine(commands[i, 0] + commands[i, 1]);
                     }
                     break;
+                    case "convert":
+                    for (int i = 0; i < 16; i++)
+                    {
+                        ConvertBinToWave($"Phonemes/vowels/phoneme{i}.bin", $"wavs/phoneme{i}.wav");
+                    }
+                    break;
                 }
             }
 
 
 
+        }
+
+        static void ConvertBinToWave(string binPath, string wavePath)
+        {
+            WaveFormat waveFormat;
+            using (WaveFileWriter writer = new WaveFileWriter(wavePath, waveFormat = new WaveFormat(Frequencies.sampleRate, 16, 1)))
+            {
+                byte[] audioData = File.ReadAllBytes(binPath);
+                writer.Write(audioData, 0, audioData.Length);
+            }
         }
     }
 }
