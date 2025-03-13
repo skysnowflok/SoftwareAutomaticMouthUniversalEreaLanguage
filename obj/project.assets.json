@@ -1,7 +1,7 @@
 {
   "version": 3,
   "targets": {
-    "net9.0": {
+    "net8.0": {
       "Microsoft.CodeAnalysis.Analyzers/3.3.4": {
         "type": "package",
         "build": {
@@ -1713,7 +1713,7 @@
     }
   },
   "projectFileDependencyGroups": {
-    "net9.0": [
+    "net8.0": [
       "Microsoft.CodeAnalysis.CSharp.Scripting >= 4.12.0",
       "NAudio >= 2.2.1"
     ]
@@ -1724,24 +1724,24 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\edu\\Documents\\GitHub\\SoftwareAutomaticMouthUniversalEreaLanguage\\speech snyth.csproj",
+      "projectUniqueName": "C:\\Users\\edu\\Documents\\GitHub\\SQLiteAPIc\\SoftwareAutomaticMouthUniversalEreaLanguage\\speech snyth.csproj",
       "projectName": "speech snyth",
-      "projectPath": "C:\\Users\\edu\\Documents\\GitHub\\SoftwareAutomaticMouthUniversalEreaLanguage\\speech snyth.csproj",
+      "projectPath": "C:\\Users\\edu\\Documents\\GitHub\\SQLiteAPIc\\SoftwareAutomaticMouthUniversalEreaLanguage\\speech snyth.csproj",
       "packagesPath": "C:\\Users\\edu\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\edu\\Documents\\GitHub\\SoftwareAutomaticMouthUniversalEreaLanguage\\obj\\",
+      "outputPath": "C:\\Users\\edu\\Documents\\GitHub\\SQLiteAPIc\\SoftwareAutomaticMouthUniversalEreaLanguage\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\edu\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
-        "net9.0"
+        "net8.0"
       ],
       "sources": {
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
-        "net9.0": {
-          "targetAlias": "net9.0",
+        "net8.0": {
+          "targetAlias": "net8.0",
           "projectReferences": {}
         }
       },
@@ -1754,12 +1754,11 @@
         "enableAudit": "true",
         "auditLevel": "low",
         "auditMode": "direct"
-      },
-      "SdkAnalysisLevel": "9.0.100"
+      }
     },
     "frameworks": {
-      "net9.0": {
-        "targetAlias": "net9.0",
+      "net8.0": {
+        "targetAlias": "net8.0",
         "dependencies": {
           "Microsoft.CodeAnalysis.CSharp.Scripting": {
             "target": "Package",
@@ -1786,7 +1785,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.102/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.406/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
