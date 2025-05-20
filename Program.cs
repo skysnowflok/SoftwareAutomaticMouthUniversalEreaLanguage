@@ -31,25 +31,29 @@ namespace Terminal
             }
             else
             {
-                switch(args[0])
+                switch (args[0])
                 {
-                    case "vowels": 
-                    Phonemes.GenerationManager.GenerateFiles(args);
-                    break;
+                    case "vowels":
+                        Phonemes.GenerationManager.GenerateFiles(args);
+                        break;
 
                     case "help":
-                    Console.WriteLine("Command list: \n");
-                    for (int i = 0; i < commands.GetLength(0); i++)
-                    {
-                        Console.WriteLine(commands[i, 0] + commands[i, 1]);
-                    }
-                    break;
+                        Console.WriteLine("Command list: \n");
+                        for (int i = 0; i < commands.GetLength(0); i++)
+                        {
+                            Console.WriteLine(commands[i, 0] + commands[i, 1]);
+                        }
+                        break;
                     case "convert":
-                    for (int i = 0; i < 16; i++)
-                    {
-                        ConvertBinToWave($"Phonemes/vowels/phoneme{i}.bin", $"wavs/phoneme{i}.wav");
-                    }
-                    break;
+                        for (int i = 0; i < 16; i++)
+                        {
+                            ConvertBinToWave($"Phonemes/vowels/phoneme{i}.bin", $"wavs/phoneme{i}.wav");
+                        }
+                        break;
+
+                    case "sentencing":
+                        SentenceSystem.Debug();
+                        break;
                 }
             }
 

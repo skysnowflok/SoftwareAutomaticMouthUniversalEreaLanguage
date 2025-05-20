@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("speech snyth")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cb29de7abdae8fd38e36f951935d091939249416")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dbb97a715f44b941054b1818c468d97ba78581ff")]
 [assembly: System.Reflection.AssemblyProductAttribute("speech snyth")]
 [assembly: System.Reflection.AssemblyTitleAttribute("speech snyth")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
