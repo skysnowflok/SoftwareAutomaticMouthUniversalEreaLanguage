@@ -12,6 +12,7 @@ namespace Phonemes
 {
     public class GenerationManager
     {
+        private static bool isGenerating = false;
         private static readonly object fileLock = new object();
         public static string folderpath = Path.Combine(Directory.GetCurrentDirectory(), "Phonemes", "vowels");
         public static List<Thread> ThreadList = new List<Thread>();
@@ -35,8 +36,8 @@ namespace Phonemes
             string key;
             foreach (string comando in comandos)
             {
-                Console.WriteLine($"Generating files for {comando} \n");
                 (selecionado, key) = GetPhonemeFrequencies(comando);
+                Console.WriteLine($"Generating files for {comando} \n");
 
                 for (int i = 0; i < selecionado.GetLength(0); i++)
                 {
@@ -51,17 +52,27 @@ namespace Phonemes
                         GenerateFile(result, threadIndex);
                         }
                     }));
-
-                    lock(fileLock)
+                    
+                    foreach(Thread thread in ThreadList)
                     {
-                        GenerateDebugWavs(selecionado.GetLength(0));
+                        thread.Start();
+                        thread.Join();
+                    }
+
+                    lock (ThreadList)
+                    {
+                        ThreadList.Clear();
+                    }
+
+                    lock (fileLock)
+                    {
+                        System.Console.WriteLine("Finished generating files for phoneme " + i);
                     }
                 }
+
+                GenerateDebugWavs(selecionado.GetLength(0));
             }
-            foreach (Thread thread in ThreadList)
-            {
-                thread.Start();
-            }
+
             
         }
 
@@ -119,8 +130,40 @@ namespace Phonemes
 
             lock(fileLock)
             {
-                string path = Path.Combine(Directory.GetCurrentDirectory(), "Phonemes", "vowels", $"phoneme{i}.bin");
-                File.WriteAllBytes(path, audioData.ToArray());
+                string folder = Path.Combine(Directory.GetCurrentDirectory(), "Phonemes", "vowels");
+                string wavPath = Path.Combine(folder, $"phoneme{i}.bin");
+
+                int sampleRate = 44100; // Adjust if needed
+                int numChannels = 1;    // Mono audio
+                int bitsPerSample = 16; // 16-bit audio
+                int byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+                int blockAlign = numChannels * (bitsPerSample / 8);
+                int subchunk2Size = audioData.Count;
+                int chunkSize = 36 + subchunk2Size;
+
+                using (FileStream fs = new FileStream(wavPath, FileMode.Create))
+                using (BinaryWriter writer = new BinaryWriter(fs))
+                {
+                    // RIFF Header
+                    writer.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"));
+                    writer.Write(chunkSize);
+                    writer.Write(System.Text.Encoding.ASCII.GetBytes("WAVE"));
+
+                    // fmt Chunk
+                    writer.Write(System.Text.Encoding.ASCII.GetBytes("fmt "));
+                    writer.Write(16);  // PCM format chunk size
+                    writer.Write((short)1);  // Audio format (1 = PCM)
+                    writer.Write((short)numChannels);
+                    writer.Write(sampleRate);
+                    writer.Write(byteRate);
+                    writer.Write((short)blockAlign);
+                    writer.Write((short)bitsPerSample);
+
+                    // data Chunk
+                    writer.Write(System.Text.Encoding.ASCII.GetBytes("data"));
+                    writer.Write(subchunk2Size);
+                    writer.Write(audioData.ToArray()); // Write the actual PCM data
+                }
             }
         }
 
@@ -131,7 +174,7 @@ namespace Phonemes
             {
                 string path = Path.Combine(Directory.GetCurrentDirectory(), "Phonemes", "vowels", $"phoneme{i}.bin");
                 byte[] audioData = File.ReadAllBytes(path);
-                File.WriteAllBytes(Path.Combine(Directory.GetCurrentDirectory(), "Phonemes", "vowels", $"phoneme{i}.wav"), audioData);
+                File.WriteAllBytes(Path.Combine(Directory.GetCurrentDirectory(), "Phonemes", "vowels", "debug", $"phoneme{i}.wav"), audioData);
             }
         }
     }
